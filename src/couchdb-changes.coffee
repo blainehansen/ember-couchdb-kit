@@ -20,22 +20,32 @@
 
 DS.CouchDBChanges = Ember.Object.extend
   db: null
-  last_seq: null
-  feed: "longpoll"
-  filter: ((data) -> )
+  since: null
+  filter: null
+  callbackFilter: ((data) -> )
   context: @
-  includeDocs: true
+  include_docs: true
+  limit: null
+  descending: false
+  heartbeat: 60000
+  timeout: 60000
+  couchdbFilter: null #designdoc/filtername
+  style: "main_only"  #all_docs | main_only
+
+  continuous: ->
+    @_checkDb()
+    url = @_getUrl("continuous")
+    @_ajax(@_withParams(url))
+
+  normal: ->
+    @_checkDb()
+    url = @_getUrl("normal")
+    @_ajax(@_withParams(url))
 
   longpoll: ->
-
-    throw "You mast add db name" unless @get('db')
-
-    url = "/%@/_changes?feed=%@".fmt(@get('db'), @get('feed'))
-    if @get('last_seq')
-      url += "&since=#{@get('last_seq')}"
-    if @get('includeDocs') && @get('last_seq')
-      url = url + "&include_docs=true"
-    @_ajax(url)
+    @_checkDb()
+    url = @_getUrl("longpoll")
+    @_ajax(@_withParams(url))
 
   _ajax: (url) ->
     $.ajax({
@@ -43,8 +53,24 @@ DS.CouchDBChanges = Ember.Object.extend
       url: url,
       dataType: 'json',
       success: (data) =>
-        if data?.results?.length && @get('last_seq')
-          @get('filter').call(@get('context'), data.results)
-        @set('last_seq', data.last_seq)
+        if data?.results?.length && @get('since')
+          @get('callbackFilter').call(@get('context'), data.results)
+        @set('since', data.last_seq)
         @longpoll()
     })
+
+  _withParams: (url) ->
+    if @get('since')
+      ["include_docs", "limit", "descending", "heartbeat", "timeout", "filter", "style", "since"].forEach (prop) =>
+        if @get(prop)
+          url += "&#{prop}=#{@get(prop)}"
+    url
+
+  _checkDb: ->
+    throw "You mast add db name" unless @get('db')
+
+  _getUrl: (type) ->
+    if @get('since')
+      "/%@/_changes?feed=%@".fmt(@get('db'), type)
+    else
+      "/%@/_changes?descending=true&limit=1".fmt(@get('db'))
