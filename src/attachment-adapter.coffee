@@ -7,7 +7,7 @@
 @extends DS.JSONSerializer
 ###
 
-constructor = (EmberCouchDBKit, DS) ->
+constructor = (EmberCouchDBKit, DS, XHR) ->
   EmberCouchDBKit.AttachmentSerializer = DS.JSONSerializer.extend
 
     materialize: (record, hash) ->
@@ -118,7 +118,7 @@ constructor = (EmberCouchDBKit, DS) ->
       store.loadMany(type, docs)
 
     createRecord: (store, type, record) ->
-      request = new XMLHttpRequest()
+      request = new XHR()
       path = "/%@/%@?rev=%@".fmt(@get('db'), record.get('id'), record.get('rev'))
       request.open('PUT', path, true)
       request.setRequestHeader('Content-Type', record.get('content_type'))
@@ -154,5 +154,5 @@ constructor = (EmberCouchDBKit, DS) ->
 if module?.exports
   module.exports = constructor
 else
-  constructor(EmberCouchDBKit, DS)
+  constructor(EmberCouchDBKit, DS, XMLHttpRequest)
 
