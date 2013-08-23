@@ -4,3 +4,4 @@ vendor/bundle
 .rvmrc
 bin/
 spec/javascripts/*.js
+node_modules
