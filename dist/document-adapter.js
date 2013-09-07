@@ -4,147 +4,27 @@
 
 @namespace EmberCouchDBKit 
 @class DocumentSerializer
-@extends DS.JSONSerializer
+@extends DS.RESTSerializer.extend
 */
 
 
 (function() {
-  EmberCouchDBKit.DocumentSerializer = DS.JSONSerializer.extend({
-    typeAttribute: 'ember_type',
-    addEmptyHasMany: false,
-    addEmptyBelongsTo: false,
-    materialize: function(record, hash) {
-      this._super.apply(this, arguments);
-      record.materializeAttribute("_rev", hash.rev || hash._rev);
-      return record.materializeAttribute("raw", hash);
-    },
-    serialize: function(record, options) {
-      var json;
-
-      json = this._super.apply(this, arguments);
-      this.addRevision(json, record, options);
-      this.addTypeAttribute(json, record);
-      return json;
-    },
-    extractHasMany: function(type, hash, key) {
-      if (key === "attachments" || key === "_attachments") {
-        return this.extractAttachments(hash["_attachments"], type.toString(), hash);
-      } else {
-        return hash[key];
+  EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend({
+    primaryKey: 'id',
+    normalize: function(type, hash, prop) {
+      this.normalizeId(hash);
+      this.normalizeUsingDeclaredMapping(type, hash);
+      this.normalizeAttributes(type, hash);
+      this.normalizeRelationships(type, hash);
+      if (this.normalizeHash && this.normalizeHash[prop]) {
+        return this.normalizeHash[prop](hash);
       }
+      return this._super(type, hash, prop);
     },
-    extractBelongsTo: function(type, hash, key) {
-      if (key === "history") {
-        return this.extractId(type, hash) + "/history";
-      } else {
-        return hash[key];
-      }
-    },
-    extract: function(loader, json, type) {
-      return this.extractRecordRepresentation(loader, type, json);
-    },
-    extractAttachments: function(attachments, type, hash) {
-      var attachment, k, key, v, _attachments;
-
-      _attachments = [];
-      for (k in attachments) {
-        v = attachments[k];
-        key = "" + hash._id + "/" + k;
-        attachment = {
-          id: key,
-          content_type: v.content_type,
-          digest: v.digest,
-          length: v.length,
-          stub: v.stub,
-          doc_id: hash._id,
-          _rev: hash._rev,
-          file_name: k,
-          doc_type: type,
-          revpos: v.revpos,
-          db: v.db
-        };
-        EmberCouchDBKit.AttachmentStore.add(key, attachment);
-        _attachments.push(key);
-      }
-      return _attachments;
-    },
-    extractId: function(type, hash) {
-      return hash._id || hash.id;
-    },
-    stringForType: function(type) {
-      var pattern, reg_array;
-
-      type = type.toString();
-      if (type.search(".") < 0) {
-        return type;
-      } else {
-        pattern = /((?:.*))\.(\w+)/ig;
-        reg_array = pattern.exec(type);
-        return reg_array[reg_array.length - 1].toString().toLowerCase();
-      }
-    },
-    getRecordRevision: function(record) {
-      return record.get('_data._rev');
-    },
-    addId: function(json, key, id) {
-      return json._id = id;
-    },
-    addRevision: function(json, record, options) {
-      var rev;
-
-      if (options && options.includeId) {
-        rev = this.getRecordRevision(record);
-        if (rev) {
-          return json._rev = rev;
-        }
-      }
-    },
-    addTypeAttribute: function(json, record) {
-      var typeAttribute;
-
-      if (this.get('add_type_attribute')) {
-        typeAttribute = this.get('typeAttribute');
-        return json[typeAttribute] = this.stringForType(record.constructor);
-      }
-    },
-    addHasMany: function(data, record, key, relationship) {
-      return this._addHasMany(data, record, key, relationship);
-    },
-    _addHasMany: function(data, record, key, relationship) {
-      var attr_key, value, values;
-
-      value = record.get(key);
-      attr_key = record.get("" + relationship.key + "_key") || "id";
-      if (this.get('addEmptyHasMany') || !Ember.isEmpty(value)) {
-        values = value.getEach(attr_key);
-        if (values.every(function(value) {
-          return !value;
-        })) {
-          values = record.get('_data.raw')[key];
-          if (values) {
-            return data[key] = values;
-          }
-        } else {
-          return data[key] = values;
-        }
-      }
-    },
-    addBelongsTo: function(hash, record, key, relationship) {
-      var id, id_key;
-
-      if (key === "history") {
-        return;
-      }
-      id_key = record.get("" + relationship.key + "_key") || "id";
-      id = Ember.get(record, "" + relationship.key + "." + id_key);
-      if (Ember.isEmpty(id) && record.get('_data.raw')) {
-        if (!Ember.isEmpty(record.get('_data.raw')[key])) {
-          return hash[key] = record.get('_data.raw')[key];
-        }
-      } else {
-        if (this.get('addEmptyBelongsTo') || !Ember.isEmpty(id)) {
-          return hash[key] = id;
-        }
+    normalizeId: function(hash) {
+      if (!hash[this.get('primaryKey')]) {
+        hash.id = hash["_id"];
+        return delete hash["_id"];
       }
     }
   });
@@ -254,7 +134,6 @@
     typeAttribute: 'ember_type',
     typeViewName: 'by-ember-type',
     customTypeLookup: false,
-    serializer: EmberCouchDBKit.DocumentSerializer,
     is: function(status, h) {
       if (this.head(h["for"]).status === status) {
         return true;
@@ -268,22 +147,66 @@
         async: false
       });
     },
-    ajax: function(url, type, hash) {
-      return this._ajax('/%@/%@'.fmt(this.get('db'), url || ''), type, hash);
+    ajax: function(url, type, modelType, hash) {
+      return this._ajax('/%@/%@'.fmt(this.get('db'), url || ''), type, modelType, hash);
     },
-    _ajax: function(url, type, hash) {
-      if (url.split("/").pop() === "") {
-        url = url.substr(0, url.length - 1);
+    _ajax: function(url, type, modelType, hash) {
+      var adapter;
+
+      if (hash == null) {
+        hash = {};
       }
-      hash.url = url;
-      hash.type = type;
-      hash.dataType = 'json';
-      hash.contentType = 'application/json; charset=utf-8';
-      hash.context = this;
-      if (hash.data && type !== 'GET') {
-        hash.data = JSON.stringify(hash.data);
+      adapter = this;
+      return new Ember.RSVP.Promise(function(resolve, reject) {
+        var headers, _data;
+
+        if (url.split("/").pop() === "") {
+          url = url.substr(0, url.length - 1);
+        }
+        hash.url = url;
+        hash.type = type;
+        hash.dataType = 'json';
+        hash.contentType = 'application/json; charset=utf-8';
+        hash.context = adapter;
+        if (hash.data && type !== 'GET') {
+          _data = hash.data;
+          hash.data = JSON.stringify(hash.data);
+        }
+        if (adapter.headers) {
+          headers = adapter.headers;
+          hash.beforeSend = function(xhr) {
+            return forEach.call(Ember.keys(headers), function(key) {
+              return xhr.setRequestHeader(key, headers[key]);
+            });
+          };
+        }
+        if (!hash.success) {
+          hash.success = function(json) {
+            var _modelJson;
+
+            if (!_data) {
+              _data = {};
+            }
+            adapter._normalizeRevision(json);
+            _modelJson = {};
+            _modelJson[modelType] = $.extend(_data, json);
+            return Ember.run(null, resolve, _modelJson);
+          };
+        }
+        hash.error = function(jqXHR, textStatus, errorThrown) {
+          if (jqXHR) {
+            jqXHR.then = null;
+          }
+          return Ember.run(null, reject, jqXHR);
+        };
+        return Ember.$.ajax(hash);
+      });
+    },
+    _normalizeRevision: function(json) {
+      if (json._rev) {
+        json.rev = json._rev;
+        return delete json._rev;
       }
-      return Ember.$.ajax(hash);
     },
     shouldCommit: function(record, relationships) {
       return this._super.apply(arguments);
@@ -295,24 +218,14 @@
       if (this._checkForRevision(id)) {
         return this.findWithRev(store, type, id);
       } else {
-        return this.ajax(id, 'GET', {
-          context: this,
-          success: function(data) {
-            return this.didFindRecord(store, type, data, id);
-          }
-        });
+        return this.ajax(id, 'GET', type.typeKey);
       }
     },
     findWithRev: function(store, type, id) {
       var _id, _ref, _rev;
 
       _ref = id.split("/").slice(0, 2), _id = _ref[0], _rev = _ref[1];
-      return this.ajax("%@?rev=%@".fmt(_id, _rev), 'GET', {
-        context: this,
-        success: function(data) {
-          return this.didFindRecord(store, type, data, id);
-        }
-      });
+      return this.ajax("%@?rev=%@".fmt(_id, _rev), 'GET');
     },
     findManyWithRev: function(store, type, ids) {
       var _this = this;
@@ -332,11 +245,7 @@
           keys: ids
         };
         return this.ajax('_all_docs?include_docs=true', 'POST', {
-          data: data,
-          context: this,
-          success: function(data) {
-            return store.loadMany(type, data.rows.getEach('doc'));
-          }
+          data: data
         });
       }
     },
@@ -353,7 +262,7 @@
 
             recordDef = {};
             recordDef[designDoc] = data.rows.getEach('doc');
-            return this.didFindQuery(store, type, recordDef, modelArray);
+            return Ember.run(null, resolve, recordDef);
           }
         });
       }
@@ -368,9 +277,8 @@
         params.include_docs = true;
         return this.ajax('_design/%@/_view/%@'.fmt(designDoc, viewName), 'GET', {
           data: params,
-          context: this,
           success: function(data) {
-            return store.loadMany(type, data.rows.getEach('doc'));
+            return Ember.run(null, resolve, data.rows.getEach('doc'));
           }
         });
       } else {
@@ -381,10 +289,9 @@
           key: '"' + typeString + '"'
         };
         return this.ajax('_design/%@/_view/%@'.fmt(designDoc, typeViewName), 'GET', {
-          context: this,
           data: data,
           success: function(data) {
-            return store.loadMany(type, data.rows.getEach('doc'));
+            return Ember.run(null, resolve, data.rows.getEach('doc'));
           }
         });
       }
@@ -392,28 +299,20 @@
     createRecord: function(store, type, record) {
       var json;
 
-      json = this.serialize(record);
+      json = store.serializerFor(type.typeKey).serialize(record);
       return this._push(store, type, record, json);
     },
     updateRecord: function(store, type, record) {
       var json;
 
       json = this.serialize(record, {
-        associations: false,
+        associations: true,
         includeId: true
       });
-      if (record.get('attachments')) {
-        this._updateAttachmnets(record, json);
-      }
       return this._push(store, type, record, json);
     },
     deleteRecord: function(store, type, record) {
-      return this.ajax("%@?rev=%@".fmt(record.get('id'), record.get('_data._rev')), 'DELETE', {
-        context: this,
-        success: function(data) {
-          return store.didSaveRecord(record);
-        }
-      });
+      return this.ajax("%@?rev=%@".fmt(record.get('id'), record.get('_data._rev')), 'DELETE', {});
     },
     _updateAttachmnets: function(record, json) {
       var _attachments;
@@ -443,17 +342,11 @@
 
       id = record.get('id') || '';
       method = record.get('id') ? 'PUT' : 'POST';
-      return this.ajax(id, method, {
-        data: json,
-        context: this,
-        success: function(data) {
-          return store.didSaveRecord(record, $.extend(json, data));
-        },
-        error: function(xhr, textStatus, errorThrown) {
-          if (xhr.status === 409) {
-            return store.recordWasInvalid(record, {});
-          }
-        }
+      if (record.get('_data.rev')) {
+        json._rev = record.get('_data.rev');
+      }
+      return this.ajax(id, method, type.typeKey, {
+        data: json
       });
     }
   });

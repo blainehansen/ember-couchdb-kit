@@ -25,52 +25,77 @@ class @TestEnv
   constructor: ->
     DatabaseCleaner.reset()
 
-    unless window.App
-      window.Fixture = Ember.Application.create({rootElement: "body"})
+    unless window.Fixture
 
-      @adapter()
-      @store()
       @models()
+
+      window.Fixture = window.setupStore({person: Person, comment: Comment, article: Article, message: Message, adapter: EmberCouchDBKit.DocumentAdapter.extend({
+        db: 'doc'
+      })})
 
     @
 
-  adapter: ->
-    Fixture.Adapter = EmberCouchDBKit.DocumentAdapter.extend({
-      db: 'doc'
-    })
-
-  store: ->
-    Fixture.Store = DS.Store.extend({
-      adapter: Fixture.Adapter.create()
-    })
 
   models: ->
-
-    Fixture.Person = DS.Model.extend
+    window.Person = DS.Model.extend
       name: DS.attr('string')
-      history: DS.belongsTo('Fixture.History')
 
-    Fixture.Comment = DS.Model.extend
+#      history: DS.belongsTo('Fixture.History')
+
+
+    window.Comment = DS.Model.extend
       text: DS.attr('string')
 
-    Fixture.Article = DS.Model.extend
+    window.Article = DS.Model.extend
       label: DS.attr('string')
-      person: DS.belongsTo(Fixture.Person),
-      comments: DS.hasMany(Fixture.Comment)
+      person: DS.belongsTo('person'),
+      comments: DS.hasMany('comment', {async: true})
 
-    Fixture.History = DS.Model.extend()
+    window.Message = DS.Model.extend
+      person: DS.belongsTo('person'),
+      person_key: "name"
 
-    Fixture.Store.registerAdapter('Fixture.History', EmberCouchDBKit.RevsAdapter.extend({db: 'doc'}))
+    History = DS.Model.extend()
 
+#    Fixture.Store.registerAdapter('Fixture.History', EmberCouchDBKit.RevsAdapter.extend({db: 'doc'}))
 
-  create: (model, params) ->
-    model = model.createRecord(params)
+  create: (type, params) ->
+
+    model = window.Fixture.store.createRecord(type, params)
+
 
     runs ->
-      model.save()
+      model.save().then (model) ->
+        window[type] = model
 
     waitsFor ->
-      model.id != null
+      model.get('_data.rev')
     , "Article id should have NOT be null", 3000
 
     model
+
+
+window.setupStore = (options) ->
+  env = {}
+  options = options or {}
+  container = env.container = new Ember.Container()
+  adapter = env.adapter = (options.adapter or DS.Adapter)
+  delete options.adapter
+
+  for prop of options
+    container.register "model:" + prop, options[prop]
+  container.register "store:main", DS.Store.extend(adapter: adapter)
+  container.register "serializer:_default", EmberCouchDBKit.DocumentSerializer
+  container.register "serializer:_couch", EmberCouchDBKit.DocumentSerializer
+  container.register "serializer:_rest", DS.RESTSerializer
+  container.register "adapter:_rest", DS.RESTAdapter
+  container.register('transform:boolean', DS.BooleanTransform)
+  container.register('transform:date', DS.DateTransform)
+  container.register('transform:number', DS.NumberTransform)
+  container.register('transform:string', DS.StringTransform)
+  container.injection "serializer", "store", "store:main"
+  env.serializer = container.lookup("serializer:_default")
+  env.restSerializer = container.lookup("serializer:_rest")
+  env.store = container.lookup("store:main")
+  env.adapter = env.store.get("defaultAdapter")
+  env

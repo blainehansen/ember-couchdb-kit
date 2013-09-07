@@ -4,114 +4,122 @@
 
 @namespace EmberCouchDBKit 
 @class DocumentSerializer
-@extends DS.JSONSerializer
+@extends DS.RESTSerializer.extend
 ###
-EmberCouchDBKit.DocumentSerializer = DS.JSONSerializer.extend
+EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend
 
-  typeAttribute: 'ember_type'
-  addEmptyHasMany: false
-  addEmptyBelongsTo: false
+  primaryKey: 'id'
 
-  materialize: (record, hash) ->
-    @_super.apply(@, arguments)
 
-    record.materializeAttribute("_rev", hash.rev || hash._rev)
-    # convenience for getting raw document body
-    record.materializeAttribute("raw", hash)
+  normalize: (type, hash, prop) ->
+    @normalizeId(hash)
+    @normalizeUsingDeclaredMapping(type, hash)
+    @normalizeAttributes(type, hash)
+    @normalizeRelationships(type, hash)
+    return @normalizeHash[prop](hash)  if @normalizeHash and @normalizeHash[prop]
+    @_super(type, hash, prop)
 
-  serialize: (record, options) ->
-    json = @_super.apply(@, arguments)
+#  serializeAttribute: (record, json, key, attribute) ->
+#    attrs = Ember.get(this, "attrs")
+#    value = Ember.get(record, key)
+#    type = attribute.type
+#    if type && @transformFor(type)
+#      transform = @transformFor(type)
+#      value = transform.serialize(value)
+#
+#    # if provided, use the mapping provided by `attrs` in
+#    # the serializer
+#    key = attrs and attrs[key] or key
+#    json[key] = value
 
-    @addRevision(json, record, options)
-    @addTypeAttribute(json, record)
-    json
+#  extractHasMany: (type, hash, key) ->
+#    if key == "attachments" || key == "_attachments"
+#      @extractAttachments(hash["_attachments"],  type.toString(), hash)
+#    else
+#      hash[key]
+#
+#  extractBelongsTo: (type, hash, key) ->
+#    if key == "history"
+#      @extractId(type, hash) + "/history"
+#    else
+#      hash[key]
+#
+#  extract: (loader, json, type) ->
+#    @extractRecordRepresentation(loader, type, json)
+#
+#  extractAttachments: (attachments, type, hash) ->
+#    _attachments = []
+#    for k, v of attachments
+#      key = "#{hash._id}/#{k}"
+#      attachment =
+#        id: key
+#        content_type: v.content_type
+#        digest: v.digest
+#        length: v.length
+#        stub: v.stub
+#        doc_id: hash._id
+#        _rev: hash._rev
+#        file_name: k
+#        doc_type: type
+#        revpos: v.revpos
+#        db: v.db
+#
+#      EmberCouchDBKit.AttachmentStore.add(key, attachment)
+#      _attachments.push(key)
+#    _attachments
+#
+  normalizeId: (hash) ->
+    unless hash[@get('primaryKey')]
+      hash.id = hash["_id"]
+      delete hash["_id"]
 
-  extractHasMany: (type, hash, key) ->
-    if key == "attachments" || key == "_attachments"
-      @extractAttachments(hash["_attachments"],  type.toString(), hash)
-    else
-      hash[key]
-
-  extractBelongsTo: (type, hash, key) ->
-    if key == "history"
-      @extractId(type, hash) + "/history"
-    else
-      hash[key]
-
-  extract: (loader, json, type) ->
-    @extractRecordRepresentation(loader, type, json)
-
-  extractAttachments: (attachments, type, hash) ->
-    _attachments = []
-    for k, v of attachments
-      key = "#{hash._id}/#{k}"
-      attachment =
-        id: key
-        content_type: v.content_type
-        digest: v.digest
-        length: v.length
-        stub: v.stub
-        doc_id: hash._id
-        _rev: hash._rev
-        file_name: k
-        doc_type: type
-        revpos: v.revpos
-        db: v.db
-
-      EmberCouchDBKit.AttachmentStore.add(key, attachment)
-      _attachments.push(key)
-    _attachments
-
-  extractId: (type, hash) ->
-    hash._id || hash.id
-
-  stringForType: (type) ->
-    type = type.toString()
-    if type.search(".") < 0
-      type
-    else
-      pattern = /((?:.*))\.(\w+)/ig
-      reg_array = pattern.exec(type)
-      reg_array[reg_array.length - 1].toString().toLowerCase()
-
-  getRecordRevision: (record) ->
-    record.get('_data._rev')
-
-  addId: (json, key, id) ->
-    json._id = id
-
-  addRevision: (json, record, options) ->
-    if options && options.includeId
-      rev = @getRecordRevision(record)
-      json._rev = rev if rev
-
-  addTypeAttribute: (json, record) ->
-    if @get('add_type_attribute')
-      typeAttribute = @get('typeAttribute')
-      json[typeAttribute] = @stringForType(record.constructor)
-
-  addHasMany: (data, record, key, relationship) ->
-    @_addHasMany(data, record, key, relationship)
-
-  _addHasMany: (data, record, key, relationship) ->
-    value = record.get(key)
-    attr_key = record.get("#{relationship.key}_key") || "id"
-    if @get('addEmptyHasMany') || !Ember.isEmpty(value)
-      values = value.getEach(attr_key)
-      if (values.every (value) -> !value) #find undefined in relations
-        values = record.get('_data.raw')[key]
-        data[key] = values if values
-      else
-        data[key] = values
-
-  addBelongsTo: (hash, record, key, relationship) ->
-    return if key == "history"
-    id_key = record.get("#{relationship.key}_key") || "id"
-    id = Ember.get(record, "#{relationship.key}.#{id_key}")
-    if Ember.isEmpty(id) && record.get('_data.raw')
-      hash[key] = record.get('_data.raw')[key] unless Ember.isEmpty(record.get('_data.raw')[key])
-    else
-      hash[key] = id if @get('addEmptyBelongsTo') || !Ember.isEmpty(id)
+#  stringForType: (type) ->
+#    type = type.toString()
+#    if type.search(".") < 0
+#      type
+#    else
+#      pattern = /((?:.*))\.(\w+)/ig
+#      reg_array = pattern.exec(type)
+#      reg_array[reg_array.length - 1].toString().toLowerCase()
+#
+#  getRecordRevision: (record) ->
+#    record.get('_data._rev')
+#
+#  addId: (json, key, id) ->
+#    json._id = id
+#
+#  addRevision: (json, record, options) ->
+#    if options && options.includeId
+#      rev = @getRecordRevision(record)
+#      json._rev = rev if rev
+#
+#  addTypeAttribute: (json, record) ->
+#    if @get('add_type_attribute')
+#      typeAttribute = @get('typeAttribute')
+#      json[typeAttribute] = @stringForType(record.constructor)
+#
+#  addHasMany: (data, record, key, relationship) ->
+#    @_addHasMany(data, record, key, relationship)
+#
+#  _addHasMany: (data, record, key, relationship) ->
+#    value = record.get(key)
+#    attr_key = record.get("#{relationship.key}_key") || "id"
+#    if @get('addEmptyHasMany') || !Ember.isEmpty(value)
+#      values = value.getEach(attr_key)
+#      if (values.every (value) -> !value) #find undefined in relations
+#        values = record.get('_data.raw')[key]
+#        data[key] = values if values
+#      else
+#        data[key] = values
+#
+#  addBelongsTo: (hash, record, key, relationship) ->
+#    return if key == "history"
+#    id_key = record.get("#{relationship.key}_key") || "id"
+#    id = Ember.get(record, "#{relationship.key}.#{id_key}")
+#    if Ember.isEmpty(id) && record.get('_data.raw')
+#      hash[key] = record.get('_data.raw')[key] unless Ember.isEmpty(record.get('_data.raw')[key])
+#    else
+#      hash[key] = id if @get('addEmptyBelongsTo') || !Ember.isEmpty(id)
 
 ###
 
@@ -217,7 +225,6 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
   typeAttribute: 'ember_type'
   typeViewName: 'by-ember-type'
   customTypeLookup: false
-  serializer: EmberCouchDBKit.DocumentSerializer
 
 
   is: (status, h) ->
@@ -228,21 +235,55 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
     @ajax(docId, 'HEAD', { async: false })
 
 
-  ajax: (url, type, hash) ->
-    @_ajax('/%@/%@'.fmt(@get('db'), url || ''), type, hash)
+  ajax: (url, type, modelType, hash) ->
+    @_ajax('/%@/%@'.fmt(@get('db'), url || ''), type, modelType, hash)
 
-  _ajax: (url, type, hash) ->
-    if url.split("/").pop() == "" then url = url.substr(0, url.length - 1)
+  _ajax: (url, type, modelType, hash={}) ->
+    adapter = this
+    return new Ember.RSVP.Promise((resolve, reject) ->
+      if url.split("/").pop() == "" then url = url.substr(0, url.length - 1)
+      hash.url = url
+      hash.type = type
+      hash.dataType = 'json'
+      hash.contentType = 'application/json; charset=utf-8'
 
-    hash.url = url
-    hash.type = type
-    hash.dataType = 'json'
-    hash.contentType = 'application/json; charset=utf-8'
-    hash.context = this
 
-    if hash.data && type != 'GET'
-      hash.data = JSON.stringify(hash.data)
-    Ember.$.ajax(hash)
+      hash.context = adapter
+
+      if hash.data && type != 'GET'
+        _data = hash.data
+        hash.data = JSON.stringify(hash.data)
+
+
+      if adapter.headers
+        headers = adapter.headers
+        hash.beforeSend = (xhr) ->
+          forEach.call Ember.keys(headers), (key) ->
+            xhr.setRequestHeader key, headers[key]
+
+      unless hash.success
+        hash.success = (json) ->
+          _data = {} unless _data
+
+          adapter._normalizeRevision(json)
+          _modelJson = {}
+          _modelJson[modelType] = $.extend(_data, json)
+
+          Ember.run(null, resolve, _modelJson)
+
+      hash.error = (jqXHR, textStatus, errorThrown) ->
+        if (jqXHR)
+          jqXHR.then = null
+        Ember.run(null, reject, jqXHR)
+
+      Ember.$.ajax(hash)
+    )
+
+  _normalizeRevision: (json) ->
+    if json._rev
+      json.rev = json._rev
+      delete json._rev
+
 
   shouldCommit: (record, relationships) ->
     @_super.apply(arguments)
@@ -254,22 +295,11 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
     if @_checkForRevision(id)
       @findWithRev(store, type, id)
     else
-      @ajax(id, 'GET', {
-        context: this
-
-        success: (data) ->
-          this.didFindRecord(store, type, data, id)
-      })
+      @ajax(id, 'GET', type.typeKey)
 
   findWithRev: (store, type, id) ->
     [_id, _rev] = id.split("/")[0..1]
-
-    @ajax("%@?rev=%@".fmt(_id, _rev), 'GET', {
-      context: this
-
-      success: (data) ->
-        @didFindRecord(store, type, data, id)
-    })
+    @ajax("%@?rev=%@".fmt(_id, _rev), 'GET')
 
   findManyWithRev:(store, type, ids) ->
     ids.forEach (id) =>
@@ -285,10 +315,6 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
 
       @ajax('_all_docs?include_docs=true', 'POST', {
         data: data
-        context: this
-
-        success: (data) ->
-          store.loadMany(type, data.rows.getEach('doc'))
       })
 
   findQuery: (store, type, query, modelArray) ->
@@ -302,7 +328,7 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
         success: (data) ->
           recordDef = {}
           recordDef[designDoc] = data.rows.getEach('doc')
-          this.didFindQuery(store, type, recordDef, modelArray)
+          Ember.run(null, resolve, recordDef)
       })
 
   findAll: (store, type) ->
@@ -315,9 +341,8 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
 
       @ajax('_design/%@/_view/%@'.fmt(designDoc, viewName), 'GET', {
         data: params
-        context: this
         success: (data) ->
-          store.loadMany(type, data.rows.getEach('doc'))
+          Ember.run(null, resolve, data.rows.getEach('doc'))
       })
     else
       typeViewName = @get('typeViewName')
@@ -327,27 +352,22 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
         key: '"' + typeString + '"'
 
       @ajax('_design/%@/_view/%@'.fmt(designDoc, typeViewName), 'GET', {
-        context: this
         data: data
         success: (data) ->
-          store.loadMany(type, data.rows.getEach('doc'))
+          Ember.run(null, resolve, data.rows.getEach('doc'))
       })
 
   createRecord: (store, type, record) ->
-    json = @serialize(record)
+    json = store.serializerFor(type.typeKey).serialize(record);
     @_push(store, type, record, json)
 
   updateRecord: (store, type, record) ->
-    json = @serialize(record, {associations: false, includeId: true })
-
-    @_updateAttachmnets(record, json) if record.get('attachments')
+    json = @serialize(record, {associations: true, includeId: true })
+#    @_updateAttachmnets(record, json) if record.get('attachments')
     @_push(store, type, record, json)
 
   deleteRecord: (store, type, record) ->
     @ajax("%@?rev=%@".fmt(record.get('id'), record.get('_data._rev')), 'DELETE', {
-      context: this
-      success: (data) ->
-        store.didSaveRecord(record)
     })
 
   _updateAttachmnets: (record, json) ->
@@ -373,11 +393,9 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
     id     = record.get('id') || ''
     method = if record.get('id') then 'PUT' else 'POST'
 
-    @ajax(id, method, {
-      data: json,
-      context: this,
-      success: (data) ->
-        store.didSaveRecord(record, $.extend(json, data))
-      error: (xhr, textStatus, errorThrown) ->
-        store.recordWasInvalid(record, {}) if xhr.status == 409
+    if record.get('_data.rev')
+      json._rev = record.get('_data.rev')
+
+    @ajax(id, method, type.typeKey, {
+      data: json
     })
