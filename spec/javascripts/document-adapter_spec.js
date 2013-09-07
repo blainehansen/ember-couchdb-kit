@@ -118,7 +118,7 @@
           return expect(prevRev).not.toEqual(person.get("_data.rev"));
         });
       });
-      return it('belongsTo relation', function() {
+      it('belongsTo relation', function() {
         var article, name, newName, person1, person2, prevRev;
 
         name = 'Vpupkin';
@@ -150,8 +150,46 @@
         }, "", 3000);
         return runs(function() {
           expect(prevRev).not.toEqual(article.get("_data.rev"));
-          console.log(article);
-          return expect(article.get('person.name')).toEqual(newName);
+          return expect(article.get('person')).toEqual(person2.id);
+        });
+      });
+      return it('updates hasMany relation', function() {
+        var article, comment, comment2;
+
+        comment = this.subject.create.call(this, 'comment', {
+          text: 'Text'
+        });
+        article = void 0;
+        comment2 = void 0;
+        runs(function() {
+          return article = this.subject.create.call(this, Fixture.Article, {
+            label: 'Label',
+            comments: []
+          });
+        });
+        runs(function() {
+          article.set('comments.content', []);
+          article.get('comments').pushObject(comment);
+          return article.save();
+        });
+        waitsFor(function() {
+          return article.get('_data.raw').comments !== void 0;
+        }, "", 3000);
+        runs(function() {
+          expect(article.get('comments').toArray().length).toEqual(1);
+          return comment2 = this.subject.create.call(this, 'comment', {
+            text: 'Text2'
+          });
+        });
+        runs(function() {
+          article.get('comments').pushObject(comment2);
+          return article.save();
+        });
+        waitsFor(function() {
+          return article.get('_data.raw').comments !== void 0 && article.get('_data.raw').comments.length === 2;
+        }, "", 3000);
+        return runs(function() {
+          return expect(article.get('comments').toArray().length).toEqual(2);
         });
       });
     });

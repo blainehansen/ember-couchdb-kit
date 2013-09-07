@@ -125,42 +125,42 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
 
       runs ->
         expect(prevRev).not.toEqual(article.get("_data.rev"))
-        console.log article
-        expect(article.get('person.name')).toEqual(newName)
+        expect(article.get('person')).toEqual(person2.id)
 
-#    it 'updates hasMany relation', ->
-#      comment = @subject.create.call(@, Fixture.Comment, {text: 'Text'})
-#
-#      article = undefined
-#      comment2 = undefined
-#
-#      runs ->
-#        article = @subject.create.call(@, Fixture.Article, {label: 'Label', comments: []})
-#
-#      runs ->
-#        article.get('comments').pushObject(comment)
-#        article.save()
-#
-#      waitsFor ->
-#        article.get('_data.raw').comments != undefined
-#      ,"", 3000
-#
-#      runs ->
-#        expect(article.get('comments').toArray().length).toEqual(1)
-#        comment2 = @subject.create.call(@, Fixture.Comment, {text: 'Text2'})
-#
-#      runs ->
-#        article.get('comments').pushObject(comment2)
-#        article.save()
-#
-#      waitsFor ->
-#        article.get('_data.raw').comments != undefined && article.get('_data.raw').comments.length == 2
-#      ,"", 3000
-#
-#      runs ->
-#        expect(article.get('comments').toArray().length).toEqual(2)
-#
-#
+    it 'updates hasMany relation', ->
+      comment = @subject.create.call(@, 'comment', {text: 'Text'})
+
+      article = undefined
+      comment2 = undefined
+
+      runs ->
+        article = @subject.create.call(@, Fixture.Article, {label: 'Label', comments: []})
+
+      runs ->
+        article.set('comments.content', [])
+        article.get('comments').pushObject(comment)
+        article.save()
+
+      waitsFor ->
+        article.get('_data.raw').comments != undefined
+      ,"", 3000
+
+      runs ->
+        expect(article.get('comments').toArray().length).toEqual(1)
+        comment2 = @subject.create.call(@, 'comment', {text: 'Text2'})
+
+      runs ->
+        article.get('comments').pushObject(comment2)
+        article.save()
+
+      waitsFor ->
+        article.get('_data.raw').comments != undefined && article.get('_data.raw').comments.length == 2
+      ,"", 3000
+
+      runs ->
+        expect(article.get('comments').toArray().length).toEqual(2)
+
+
 #  describe "deletion", ->
 #
 #    it "in general", ->
