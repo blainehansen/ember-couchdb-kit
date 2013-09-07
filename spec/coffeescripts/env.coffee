@@ -65,8 +65,7 @@ class @TestEnv
 
 
     runs ->
-      model.save().then (model) ->
-        window[type] = model
+      model.save()
 
     waitsFor ->
       model.get('_data.rev')

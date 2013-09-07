@@ -76,9 +76,7 @@
 
       model = window.Fixture.store.createRecord(type, params);
       runs(function() {
-        return model.save().then(function(model) {
-          return window[type] = model;
-        });
+        return model.save();
       });
       waitsFor(function() {
         return model.get('_data.rev');

@@ -80,53 +80,54 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
       runs ->
         expect(article.get('_data').comments[0]).toBe(comment.id)
 
-#  describe 'model updating', ->
-#
-#    it 'in general', ->
-#      person = @subject.create.call(@, Fixture.Person, {name: "John"})
-#      prevRev = undefined
-#
-#      runs ->
-#        prevRev = person.get("_data._rev")
-#        person.set('name', 'Bobby')
-#        person.save()
-#
-#      waitsFor ->
-#        prevRev != person.get("_data._rev")
-#      ,"", 3000
-#
-#      runs ->
-#        expect(prevRev).not.toEqual(person.get("_data._rev"))
-#
-#    it 'belongsTo relation', ->
-#      name = 'Vpupkin'
-#      newName = 'Bobby'
-#
-#      person1 = @subject.create.call(@, Fixture.Person, {name: name})
-#
-#      article = undefined
-#      prevRev = undefined
-#      person2 = undefined
-#
-#      runs ->
-#        article = @subject.create.call(@, Fixture.Article, {label: 'Label', person: person1})
-#
-#      runs ->
-#        prevRev =  article.get("_data._rev")
-#        person2 = @subject.create.call(@, Fixture.Person, {name: newName})
-#
-#      runs ->
-#        article.set('person', person2)
-#        article.save()
-#
-#      waitsFor ->
-#        prevRev != article.get("_data._rev")
-#      ,"", 3000
-#
-#      runs ->
-#        expect(prevRev).not.toEqual(article.get("_data._rev"))
-#        expect(article.get('person.name')).toEqual(newName)
-#
+  describe 'model updating', ->
+
+    it 'in general', ->
+      person = @subject.create.call(@, 'person', {name: "John"})
+      prevRev = undefined
+
+      runs ->
+        prevRev = person.get("_data.rev")
+        person.set('name', 'Bobby')
+        person.save()
+
+      waitsFor ->
+        prevRev != person.get("_data.rev")
+      ,"", 3000
+
+      runs ->
+        expect(prevRev).not.toEqual(person.get("_data.rev"))
+
+    it 'belongsTo relation', ->
+      name = 'Vpupkin'
+      newName = 'Bobby'
+
+      person1 = @subject.create.call(@, 'person', {name: name})
+
+      article = undefined
+      prevRev = undefined
+      person2 = undefined
+
+      runs ->
+        article = @subject.create.call(@, 'article', {label: 'Label', person: person1})
+
+      runs ->
+        prevRev =  article.get("_data.rev")
+        person2 = @subject.create.call(@, 'person', {name: newName})
+
+      runs ->
+        article.set('person', person2)
+        article.save()
+
+      waitsFor ->
+        prevRev != article.get("_data.rev")
+      ,"", 3000
+
+      runs ->
+        expect(prevRev).not.toEqual(article.get("_data.rev"))
+        console.log article
+        expect(article.get('person.name')).toEqual(newName)
+
 #    it 'updates hasMany relation', ->
 #      comment = @subject.create.call(@, Fixture.Comment, {text: 'Text'})
 #

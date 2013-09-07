@@ -5,7 +5,7 @@
     beforeEach(function() {
       return this.subject = new TestEnv();
     });
-    return describe('model creation', function() {
+    describe('model creation', function() {
       it('record with specific id', function() {
         var person;
 
@@ -95,6 +95,63 @@
         }, "", 3000);
         return runs(function() {
           return expect(article.get('_data').comments[0]).toBe(comment.id);
+        });
+      });
+    });
+    return describe('model updating', function() {
+      it('in general', function() {
+        var person, prevRev;
+
+        person = this.subject.create.call(this, 'person', {
+          name: "John"
+        });
+        prevRev = void 0;
+        runs(function() {
+          prevRev = person.get("_data.rev");
+          person.set('name', 'Bobby');
+          return person.save();
+        });
+        waitsFor(function() {
+          return prevRev !== person.get("_data.rev");
+        }, "", 3000);
+        return runs(function() {
+          return expect(prevRev).not.toEqual(person.get("_data.rev"));
+        });
+      });
+      return it('belongsTo relation', function() {
+        var article, name, newName, person1, person2, prevRev;
+
+        name = 'Vpupkin';
+        newName = 'Bobby';
+        person1 = this.subject.create.call(this, 'person', {
+          name: name
+        });
+        article = void 0;
+        prevRev = void 0;
+        person2 = void 0;
+        runs(function() {
+          return article = this.subject.create.call(this, 'article', {
+            label: 'Label',
+            person: person1
+          });
+        });
+        runs(function() {
+          prevRev = article.get("_data.rev");
+          return person2 = this.subject.create.call(this, 'person', {
+            name: newName
+          });
+        });
+        runs(function() {
+          article.set('person', person2);
+          return article.save();
+        });
+        waitsFor(function() {
+          return prevRev !== article.get("_data.rev");
+        }, "", 3000);
+        return runs(function() {
+          expect(prevRev).not.toEqual(article.get("_data.rev"));
+          console.log(article);
+          return expect(article.get('person.name')).toEqual(newName);
         });
       });
     });
