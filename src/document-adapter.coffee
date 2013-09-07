@@ -17,7 +17,14 @@ EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend
     @normalizeAttributes(type, hash)
     @normalizeRelationships(type, hash)
     return @normalizeHash[prop](hash)  if @normalizeHash and @normalizeHash[prop]
-    @_super(type, hash, prop)
+    if (!hash)
+      return hash
+
+    this.applyTransforms(type, hash);
+    hash;
+
+  extractSingle: (store, type, payload, id, requestType) ->
+    @_super(store, type, payload, id, requestType)
 
 #  serializeAttribute: (record, json, key, attribute) ->
 #    attrs = Ember.get(this, "attrs")
@@ -72,6 +79,16 @@ EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend
     unless hash[@get('primaryKey')]
       hash.id = hash["_id"]
       delete hash["_id"]
+
+  normalizeRelationships: (type, hash) ->
+    payloadKey = undefined
+    key = undefined
+    if @keyForRelationship
+      type.eachRelationship ((key, relationship) ->
+        payloadKey = @keyForRelationship(key, relationship.kind)
+        return  if key is payloadKey
+        hash[key] = hash[payloadKey]
+      ), this
 
 #  stringForType: (type) ->
 #    type = type.toString()
@@ -254,7 +271,6 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
         _data = hash.data
         hash.data = JSON.stringify(hash.data)
 
-
       if adapter.headers
         headers = adapter.headers
         hash.beforeSend = (xhr) ->
@@ -306,6 +322,8 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
       @findWithRev(store, type, id)
 
   findMany: (store, type, ids) ->
+    console.log type
+
     if @_checkForRevision(ids[0])
       @findManyWithRev(store, type, ids)
     else
@@ -363,7 +381,7 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
 
   updateRecord: (store, type, record) ->
     json = @serialize(record, {associations: true, includeId: true })
-#    @_updateAttachmnets(record, json) if record.get('attachments')
+    #    @_updateAttachmnets(record, json) if record.get('attachments')
     @_push(store, type, record, json)
 
   deleteRecord: (store, type, record) ->

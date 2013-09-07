@@ -19,12 +19,34 @@
       if (this.normalizeHash && this.normalizeHash[prop]) {
         return this.normalizeHash[prop](hash);
       }
-      return this._super(type, hash, prop);
+      if (!hash) {
+        return hash;
+      }
+      this.applyTransforms(type, hash);
+      return hash;
+    },
+    extractSingle: function(store, type, payload, id, requestType) {
+      return this._super(store, type, payload, id, requestType);
     },
     normalizeId: function(hash) {
       if (!hash[this.get('primaryKey')]) {
         hash.id = hash["_id"];
         return delete hash["_id"];
+      }
+    },
+    normalizeRelationships: function(type, hash) {
+      var key, payloadKey;
+
+      payloadKey = void 0;
+      key = void 0;
+      if (this.keyForRelationship) {
+        return type.eachRelationship((function(key, relationship) {
+          payloadKey = this.keyForRelationship(key, relationship.kind);
+          if (key === payloadKey) {
+            return;
+          }
+          return hash[key] = hash[payloadKey];
+        }), this);
       }
     }
   });
@@ -237,6 +259,7 @@
     findMany: function(store, type, ids) {
       var data;
 
+      console.log(type);
       if (this._checkForRevision(ids[0])) {
         return this.findManyWithRev(store, type, ids);
       } else {

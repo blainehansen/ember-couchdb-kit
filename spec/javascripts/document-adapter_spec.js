@@ -71,7 +71,7 @@
         });
       });
       return it('with hasMany', function() {
-        var article, comment;
+        var article, comment, oldRev;
 
         comment = this.subject.create.call(this, 'comment', {
           text: 'text'
@@ -83,10 +83,18 @@
             comments: []
           });
         });
-        return runs(function() {
+        oldRev = void 0;
+        runs(function() {
+          oldRev = article.get("_data.rev");
+          article.set('comments.content', []);
           article.get('comments').pushObject(comment);
-          article.get('comments');
           return article.save();
+        });
+        waitsFor(function() {
+          return article.get('_data.rev') !== oldRev;
+        }, "", 3000);
+        return runs(function() {
+          return expect(article.get('_data').comments[0]).toBe(comment.id);
         });
       });
     });

@@ -4572,7 +4572,6 @@ function asyncHasMany(type, options, meta) {
 
     var relationship = buildRelationship(this, key, options, function(store, data) {
       var link = data.links && data.links[key];
-
       if (link) {
         return store.findHasMany(this, link, meta, resolver);
       } else {
