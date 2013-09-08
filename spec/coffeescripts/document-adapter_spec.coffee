@@ -134,7 +134,7 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
       comment2 = undefined
 
       runs ->
-        article = @subject.create.call(@, Fixture.Article, {label: 'Label', comments: []})
+        article = @subject.create.call(@, 'article', {label: 'Label', comments: []})
 
       runs ->
         article.set('comments.content', [])
@@ -142,7 +142,7 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
         article.save()
 
       waitsFor ->
-        article.get('_data.raw').comments != undefined
+        article.get('_data').comments != undefined
       ,"", 3000
 
       runs ->
@@ -154,7 +154,7 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
         article.save()
 
       waitsFor ->
-        article.get('_data.raw').comments != undefined && article.get('_data.raw').comments.length == 2
+        article.get('_data').comments != undefined && article.get('_data').comments.length == 2
       ,"", 3000
 
       runs ->

@@ -322,7 +322,7 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
       @findWithRev(store, type, id)
 
   findMany: (store, type, ids) ->
-    console.log type
+    console.log 'x'
 
     if @_checkForRevision(ids[0])
       @findManyWithRev(store, type, ids)

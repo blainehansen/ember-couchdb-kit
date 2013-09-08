@@ -162,7 +162,7 @@
         article = void 0;
         comment2 = void 0;
         runs(function() {
-          return article = this.subject.create.call(this, Fixture.Article, {
+          return article = this.subject.create.call(this, 'article', {
             label: 'Label',
             comments: []
           });
@@ -173,7 +173,7 @@
           return article.save();
         });
         waitsFor(function() {
-          return article.get('_data.raw').comments !== void 0;
+          return article.get('_data').comments !== void 0;
         }, "", 3000);
         runs(function() {
           expect(article.get('comments').toArray().length).toEqual(1);
@@ -186,7 +186,7 @@
           return article.save();
         });
         waitsFor(function() {
-          return article.get('_data.raw').comments !== void 0 && article.get('_data.raw').comments.length === 2;
+          return article.get('_data').comments !== void 0 && article.get('_data').comments.length === 2;
         }, "", 3000);
         return runs(function() {
           return expect(article.get('comments').toArray().length).toEqual(2);

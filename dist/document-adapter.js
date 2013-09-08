@@ -259,7 +259,7 @@
     findMany: function(store, type, ids) {
       var data;
 
-      console.log(type);
+      console.log('x');
       if (this._checkForRevision(ids[0])) {
         return this.findManyWithRev(store, type, ids);
       } else {
