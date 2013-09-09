@@ -122,7 +122,9 @@ EmberCouchDBKit.AttachmentAdapter = DS.Adapter.extend
     # just for stubbing purpose which should be defined by default
 
   deleteRecord: (store, type, record) ->
-    # just for stubbing purpose which should be defined by default
+    return new Ember.RSVP.Promise((resolve, reject) ->
+      Ember.run(null, resolve, {})
+    )
 
   _updateUploadState: (record, request) ->
     view = record.get('view')

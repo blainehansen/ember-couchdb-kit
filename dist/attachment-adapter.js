@@ -145,7 +145,11 @@
       });
     },
     updateRecord: function(store, type, record) {},
-    deleteRecord: function(store, type, record) {},
+    deleteRecord: function(store, type, record) {
+      return new Ember.RSVP.Promise(function(resolve, reject) {
+        return Ember.run(null, resolve, {});
+      });
+    },
     _updateUploadState: function(record, request) {
       var view,
         _this = this;
