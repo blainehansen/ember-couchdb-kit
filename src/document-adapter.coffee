@@ -12,7 +12,7 @@ EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend
 
   normalize: (type, hash, prop) ->
     @normalizeId(hash)
-    @normalizeAttachments(hash["_attachments"],  type.toString(), hash)
+    @normalizeAttachments(hash["_attachments"],  type.typeKey, hash)
     @addHistoryId(hash)
     @normalizeUsingDeclaredMapping(type, hash)
     @normalizeAttributes(type, hash)
@@ -45,7 +45,7 @@ EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend
         length: v.length
         stub: v.stub
         doc_id: hash._id
-        _rev: hash._rev
+        rev: hash.rev
         file_name: k
         doc_type: type
         revpos: v.revpos
@@ -53,7 +53,7 @@ EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend
 
       EmberCouchDBKit.AttachmentStore.add(key, attachment)
       _attachments.push(key)
-    _attachments
+    hash.attachments = _attachments
 
   normalizeId: (hash) ->
     hash.id = (hash["_id"] || hash["id"])
@@ -181,10 +181,7 @@ EmberCouchDBKit.DocumentSerializer = DS.RESTSerializer.extend
 ###
 EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
 
-  typeAttribute: 'ember_type'
-  typeViewName: 'by-ember-type'
   customTypeLookup: false
-
 
   is: (status, h) ->
     return true if @head(h.for).status == status
@@ -342,7 +339,7 @@ EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend
 
   updateRecord: (store, type, record) ->
     json = @serialize(record, {associations: true, includeId: true })
-    #    @_updateAttachmnets(record, json) if record.get('attachments')
+    @_updateAttachmnets(record, json) if record.get('attachments')
     @_push(store, type, record, json)
 
   deleteRecord: (store, type, record) ->

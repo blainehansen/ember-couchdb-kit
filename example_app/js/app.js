@@ -8,17 +8,14 @@ App.Boards = ['common', 'intermediate', 'advanced'];
 App.ApplicationAdapter =  EmberCouchDBKit.DocumentAdapter.extend({db: 'boards'});
 App.ApplicationSerializer = EmberCouchDBKit.DocumentSerializer.extend();
 
-//App.Store = DS.Store.extend({
-//  adapter: EmberCouchDBKit.DocumentAdapter.create({db: 'boards'})
-//});
-
-//App.Store.registerAdapter('App.Attachment', EmberCouchDBKit.AttachmentAdapter.extend({db: 'boards'}));
+App.AttachmentAdapter = EmberCouchDBKit.AttachmentAdapter.extend({db: 'boards'});
+App.AttachmentSerializer = EmberCouchDBKit.AttachmentSerializer.extend();
 
 App.Issue = DS.Model.extend({
   text: DS.attr('string'),
   type: DS.attr('string', {defaultValue: 'issue'}),
-  board: DS.belongsTo('position', {attribute: "id"})
-//  attachments: DS.hasMany('App.Attachment', {async: true})
+  board: DS.belongsTo('position', {attribute: "id"}),
+  attachments: DS.hasMany('attachment', {async: true})
 });
 
 App.Attachment = DS.Model.extend({
@@ -32,7 +29,6 @@ App.Position = DS.Model.extend({
   issues: DS.hasMany('issue', {async: true}),
   type: DS.attr('string', {defaultValue: 'position'})
 });
-
 
 // Routes
 
@@ -127,6 +123,7 @@ App.IndexController = Ember.Controller.extend({
   actions: {
       createIssue: function(fields) {
         self = this;
+        this.get('position.issues').then(function(issues){window.issues = issues;});
         issue = this.get('store').createRecord('issue', fields);
         issue.save().then(function(issue) {
           self.get('position.issues').pushObject(issue);
@@ -134,7 +131,9 @@ App.IndexController = Ember.Controller.extend({
       },
 
       saveMessage: function(model) {
-        model.save();
+        model.save().then(function(){
+           model.reload();
+        });
       },
 
       deleteMessage: function(issue) {
@@ -142,34 +141,38 @@ App.IndexController = Ember.Controller.extend({
           issue.save().then(function(){
             self.get('position.issues').removeObject(issue);
           })
-      }
-  },
-  deleteAttachment: function(attachment){
-    // attachment.deleteRecord();
-    // attachment.get('store').commit();
-  },
+      },
 
-  browseFile: function(viewId) {
-//    Ember.View.views[viewId].$().click();
-    document.getElementById(viewId).click();
-  },
-  addAttachment: function(file, model){
-    issue = model.get('_data.raw');
-    attachmentId = "%@/%@".fmt(model.id, file.name);
-    params = {
-      doc_id: model.id,
-      doc_type: App.Issue,
-      rev: issue._rev,
-      id: attachmentId,
-      file: file,
-      content_type: file.type,
-      length: file.size,
-      file_name: file.name
-    };
-    attachment = App.Attachment.createRecord(params);
-    attachment.get('store').commit();
-  },
-  needs: App.Boards
+      addAttachment: function(file, model){
+          rev = model.get('_data.rev');
+          attachmentId = "%@/%@".fmt(model.id, file.name);
+          params = {
+              doc_id: model.id,
+              doc_type: 'issue',
+              rev: rev,
+              id: attachmentId,
+              file: file,
+              content_type: file.type,
+              length: file.size,
+              file_name: file.name
+          };
+          attachment = this.store.createRecord('attachment', params);
+          attachment.save().then(function(attachmnet){
+             model.get('attachments').pushObject(attachmnet);
+             model.reload()
+          });
+      },
+
+      //Todo move this into view!!!!!!!!
+      browseFile: function(viewId) {
+        Ember.View.views[viewId].$().click();
+      },
+
+      deleteAttachment: function(attachment){
+        attachment.deleteRecord();
+        attachment.save();
+      }
+  }
 });
 
 App.CommonController       = App.IndexController.extend({ name: 'common' });
@@ -298,7 +301,7 @@ App.AttachmentView = Ember.View.extend({
   style: "display:none",
   type: 'file',
   multiple: true,
-  
+
   change: function(event) {
     var files = event.target.files;
     for (var i = 0, file; file = files[i]; i++) {

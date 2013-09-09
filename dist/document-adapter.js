@@ -13,7 +13,7 @@
     primaryKey: '_id',
     normalize: function(type, hash, prop) {
       this.normalizeId(hash);
-      this.normalizeAttachments(hash["_attachments"], type.toString(), hash);
+      this.normalizeAttachments(hash["_attachments"], type.typeKey, hash);
       this.addHistoryId(hash);
       this.normalizeUsingDeclaredMapping(type, hash);
       this.normalizeAttributes(type, hash);
@@ -53,7 +53,7 @@
           length: v.length,
           stub: v.stub,
           doc_id: hash._id,
-          _rev: hash._rev,
+          rev: hash.rev,
           file_name: k,
           doc_type: type,
           revpos: v.revpos,
@@ -62,7 +62,7 @@
         EmberCouchDBKit.AttachmentStore.add(key, attachment);
         _attachments.push(key);
       }
-      return _attachments;
+      return hash.attachments = _attachments;
     },
     normalizeId: function(hash) {
       return hash.id = hash["_id"] || hash["id"];
@@ -203,8 +203,6 @@
 
 
   EmberCouchDBKit.DocumentAdapter = DS.Adapter.extend({
-    typeAttribute: 'ember_type',
-    typeViewName: 'by-ember-type',
     customTypeLookup: false,
     is: function(status, h) {
       if (this.head(h["for"]).status === status) {
@@ -430,6 +428,9 @@
         associations: true,
         includeId: true
       });
+      if (record.get('attachments')) {
+        this._updateAttachmnets(record, json);
+      }
       return this._push(store, type, record, json);
     },
     deleteRecord: function(store, type, record) {
