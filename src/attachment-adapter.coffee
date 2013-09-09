@@ -13,7 +13,7 @@ EmberCouchDBKit.AttachmentSerializer = DS.RESTSerializer.extend
   normalize: (type, hash) ->
     self = this
     rev = (hash._rev || hash.rev)
-    @store.find(hash.doc_type, hash.doc_id).then (document) ->
+    @store.find(hash.model_name, hash.doc_id).then (document) ->
       unless document.get('_data.rev') == rev
         if self.getIntRevision(document.get('_data.rev')) < self.getIntRevision(rev)
           document.set('_data.rev', rev)
@@ -110,7 +110,7 @@ EmberCouchDBKit.AttachmentAdapter = DS.Adapter.extend
       request.onreadystatechange =  =>
         if request.readyState == 4 && (request.status == 201 || request.status == 200)
           data = JSON.parse(request.response)
-          data.doc_type = record.get('doc_type')
+          data.model_name = record.get('model_name')
           data.doc_id = record.get('doc_id')
           json = adapter.serialize(record, includeId: true)
           delete data.id

@@ -148,7 +148,7 @@ App.IndexController = Ember.Controller.extend({
           attachmentId = "%@/%@".fmt(model.id, file.name);
           params = {
               doc_id: model.id,
-              doc_type: 'issue',
+              model_name: 'issue',
               rev: rev,
               id: attachmentId,
               file: file,

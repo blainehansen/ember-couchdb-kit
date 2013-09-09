@@ -55,7 +55,7 @@
           doc_id: hash._id,
           rev: hash.rev,
           file_name: k,
-          doc_type: type,
+          model_name: type,
           revpos: v.revpos,
           db: v.db
         };
