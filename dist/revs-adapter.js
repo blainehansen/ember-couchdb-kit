@@ -9,29 +9,18 @@
 
 
 (function() {
-  EmberCouchDBKit.RevsSerializer = DS.JSONSerializer.extend({
-    materialize: function(record, hash) {
-      return this._super.apply(this, arguments);
-    },
-    serialize: function(record, options) {
-      return this._super.apply(this, arguments);
-    },
-    extract: function(loader, json, type) {
-      return this.extractRecordRepresentation(loader, type, json);
+  EmberCouchDBKit.RevsSerializer = DS.RESTSerializer.extend({
+    primaryKey: 'id',
+    normalize: function(type, hash, prop) {
+      this.normalizeHistories(hash, type.typeKey, hash);
+      return this._super(type, hash, prop);
     },
     extractId: function(type, hash) {
       return hash._id || hash.id;
     },
-    addId: function(json, key, id) {
-      return json._id = id;
-    },
-    extractHasMany: function(type, hash, key) {
-      return hash[key] = EmberCouchDBKit.RevsStore.mapRevIds(this.extractId(type, hash));
-    },
-    extractBelongsTo: function(type, hash, key) {
-      if (key.match("prev_")) {
-        return hash[key] = EmberCouchDBKit.RevsStore.mapRevIds(this.extractId(type, hash))[1];
-      }
+    normalizeHistories: function(hash, type) {
+      hash["histories"] = EmberCouchDBKit.RevsStore.mapRevIds(this.extractId(type, hash));
+      return hash["prev_history"] = EmberCouchDBKit.RevsStore.mapRevIds(this.extractId(type, hash))[1];
     }
   });
 
@@ -72,19 +61,9 @@
 
 
   EmberCouchDBKit.RevsAdapter = DS.Adapter.extend({
-    serializer: EmberCouchDBKit.RevsSerializer,
-    shouldCommit: function(record, relationships) {
-      return this._super.apply(arguments);
-    },
     find: function(store, type, id) {
       return this.ajax("%@?revs_info=true".fmt(id.split("/")[0]), 'GET', {
-        context: this,
-        success: function(data) {
-          EmberCouchDBKit.RevsStore.add(id, data);
-          return this.didFindRecord(store, type, {
-            _id: id
-          }, id);
-        }
+        context: this
       });
     },
     updateRecord: function(store, type, record) {},
@@ -104,7 +83,9 @@
       if (hash.data && type !== 'GET') {
         hash.data = JSON.stringify(hash.data);
       }
-      return Ember.$.ajax(hash);
+      return new Ember.RSVP.Promise(function(resolve, reject) {
+        return Ember.$.ajax(hash);
+      });
     }
   });
 
