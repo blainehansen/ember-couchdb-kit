@@ -163,11 +163,6 @@ App.IndexController = Ember.Controller.extend({
           });
       },
 
-      //Todo move this into view!!!!!!!!
-      browseFile: function(viewId) {
-        Ember.View.views[viewId].$().click();
-      },
-
       deleteAttachment: function(attachment){
         attachment.deleteRecord();
         attachment.save();
@@ -301,6 +296,12 @@ App.AttachmentView = Ember.View.extend({
   style: "display:none",
   type: 'file',
   multiple: true,
+
+  actions: {
+    browseFile: function(e){
+     this.$().click()
+    }
+  },
 
   change: function(event) {
     var files = event.target.files;
