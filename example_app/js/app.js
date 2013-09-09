@@ -306,6 +306,7 @@ App.AttachmentView = Ember.View.extend({
     var files = event.target.files;
     for (var i = 0, file; file = files[i]; i++) {
       if (!file.type.match('image.*')) {
+        alert('Your file is not image!');
         continue;
       }
       this.get('controller').send('addAttachment', file, this.get('context'));
@@ -319,7 +320,9 @@ Ember.TextArea.reopen({
 });
 
 Ember.Handlebars.helper('linkToAttachment', function(attachment) {
+  aTagTemplate= "<a href='%@' target='_blank'>%@</a>"
+  url = "/%@/%@".fmt(attachment.get('_data.db'), attachment.get('id'));
   return new Handlebars.SafeString(
-    "<a href='" + "/%@/%@".fmt( attachment.get('_data.db'), attachment.get('id') + "' target='_blank'>" + attachment.get('file_name') + ";</a>"
-  ));
+    aTagTemplate.fmt(url, attachment.get('file_name'))
+  );
 });
