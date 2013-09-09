@@ -83,9 +83,9 @@ EmberCouchDBKit.RevAdapter = DS.Adapter.extend
     hash.data = JSON.stringify(hash.data) if (hash.data && type != 'GET')
 
     return new Ember.RSVP.Promise((resolve, reject) ->
-      hash.success: (data) ->
+      hash.success = (data) ->
         EmberCouchDBKit.RevsStore.add(id, data)
-        Ember.run(null, resolve, {rev: data})
+        Ember.run(null, resolve, { rev: data })
 
       Ember.$.ajax(hash)
     )
