@@ -26,7 +26,7 @@ App.Attachment = DS.Model.extend({
 });
 
 App.Position = DS.Model.extend({
-  issues: DS.hasMany('issue', {async: true}),
+  issues: DS.hasMany('issue', {async: true,  inverse: null}),
   type: DS.attr('string', {defaultValue: 'position'})
 });
 
@@ -127,6 +127,7 @@ App.IndexController = Ember.Controller.extend({
         issue = this.get('store').createRecord('issue', fields);
         issue.save().then(function(issue) {
           self.get('position.issues').pushObject(issue);
+          self.get('position').save()
         });
       },
 
