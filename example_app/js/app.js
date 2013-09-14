@@ -145,7 +145,7 @@ App.IndexController = Ember.Controller.extend({
         });
       })
     },
-      
+
     addAttachment: function(files, model){
       this._actions._addAttachment(0, files, files.length, model, this)
     },
@@ -247,9 +247,7 @@ App.IssueView = Ember.View.extend({
   }
 });
 
-
 App.NewIssueView = Ember.View.extend({
-
   tagName: "form",
   create: false,
   attributeBindings: ["style"],
@@ -279,7 +277,7 @@ App.NewIssueView = Ember.View.extend({
 
 App.CancelView = Ember.View.extend({
   tagName: "span",
-  
+
   click: function(event){
     event.preventDefault();
     this.set('parentView.create',false);
@@ -298,6 +296,7 @@ App.DeleteIssueView = Ember.View.extend({
 App.DeleteAttachmentView = Ember.View.extend({
   tagName: "span",
   classNames: ['badge'],
+
   click: function(event){
     event.preventDefault();
     this.get('controller').send('deleteAttachment', this.get('context'));
@@ -305,7 +304,6 @@ App.DeleteAttachmentView = Ember.View.extend({
 });
 
 App.AttachmentView = Ember.View.extend({
-  
   tagName: "input",
   attributeBindings: ["style", "type", "multiple"],
   style: "display:none",
@@ -323,8 +321,7 @@ App.AttachmentView = Ember.View.extend({
   }
 });
 
-Ember.TextArea.reopen({
-  attributeBindings: ['viewName'],
+App.FocusedTextArea = Ember.TextArea.extend({
   elementDidChange: function() {
     this.$().focus();
   }.observes('element')
