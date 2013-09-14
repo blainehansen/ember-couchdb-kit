@@ -183,7 +183,7 @@ App.IndexController = Ember.Controller.extend({
     },
 
     dropIssue: function(view, self, viewModel, selfModel) {
-      var position = self.get('content').toArray().indexOf(selfModel)
+      var position = self.get('content').toArray().indexOf(selfModel);
       view.get('content').removeObject(viewModel);
       self.get('content').insertAt(position, viewModel);
       self.get('position').save().then(function(self) {
@@ -239,8 +239,8 @@ App.IssueView = Ember.View.extend({
   },
 
   drop: function(event) {
-    if(this.draggable === true){
-      var view = Ember.View.views[event.dataTransfer.getData('id')];
+    var view = Ember.View.views[event.dataTransfer.getData('id')];
+    if((this.draggable === 'true') || (view.draggable === 'true')){
       this.get('controller').send("dropIssue", view.get('controller'), this.get('controller'), view.get('context'), this.get('context'));
     }
     event.preventDefault();
