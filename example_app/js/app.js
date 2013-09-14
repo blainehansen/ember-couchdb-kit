@@ -35,10 +35,9 @@ App.IndexRoute = Ember.Route.extend({
 
   setupController: function(controller, model) {
     this._setupPositionHolders();
-    window.store = this.get('store');
 
-   // this._position();
-   // this._issue();
+   this._position();
+   this._issue();
   },
 
   renderTemplate: function() {
@@ -121,11 +120,6 @@ App.IndexController = Ember.Controller.extend({
   actions: {
     createIssue: function(text) {
       var self = this;
-
-      this.get('position.issues').then(function(issues){
-        window.issues = issues;
-      });
-
       var issue = this.get('store').createRecord('issue', {text: text});
       issue.save().then(function(issue) {
         self.get('position.issues').pushObject(issue);
@@ -135,13 +129,13 @@ App.IndexController = Ember.Controller.extend({
       });
     },
 
-    saveMessage: function(model) {
+    saveIssue: function(model) {
       model.save().then(function(){
         model.reload();
       });
     },
 
-    deleteMessage: function(issue) {
+    deleteIssue: function(issue) {
       var self = this;
       self.get('position.issues').removeObject(issue);
       issue.deleteRecord();
@@ -151,18 +145,19 @@ App.IndexController = Ember.Controller.extend({
         });
       })
     },
+      
     addAttachment: function(files, model){
-      this._addAttachment(0, files, files.length, model)
+      this._actions._addAttachment(0, files, files.length, model, this)
     },
 
-    _addAttachment: function(count, files, size, model){
+    _addAttachment: function(count, files, size, model, self){
       file = files[count];
       attachmentId = "%@/%@".fmt(model.id, file.name);
 
       params = {
         doc_id: model.id,
-        doc_type: App.Issue,
-        rev: model._data._rev,
+        model_name: App.Issue,
+        rev: model._data.rev,
         id: attachmentId,
         file: file,
         content_type: file.type,
@@ -170,14 +165,14 @@ App.IndexController = Ember.Controller.extend({
         file_name: file.name
       }
 
-      var self = this;
-      attachment = App.Attachment.createRecord(params);
-      attachment.get('store').commit();
-      attachment.one('didCreate', function() {
+      var attachment = self.get('store').createRecord('attachment', params);
+      attachment.save().then(function() {
+        model.get('attachments').pushObject(attachment);
+        model.reload();
         Ember.run.next(function() {
           count = count + 1;
           if(count < size){
-            self._addAttachment(count, files, size, model);
+            self._actions._addAttachment(count, files, size, model, self);
           }
         });
       });
@@ -221,7 +216,7 @@ App.IssueView = Ember.View.extend({
   submit: function(event){
     event.preventDefault();
     if (this.get('edit')){
-      this.get('controller').send("saveMessage", this.get('context') );
+      this.get('controller').send("saveIssue", this.get('context') );
     }
     this.toggleProperty('edit');
   },
@@ -296,8 +291,7 @@ App.DeleteIssueView = Ember.View.extend({
 
   click: function(event){
     event.preventDefault();
-    // this.$().attr('disabled', true);
-    this.get('controller').send('deleteMessage', this.get('context'));
+    this.get('controller').send('deleteIssue', this.get('context'));
   }
 });
 
