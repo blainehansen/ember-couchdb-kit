@@ -35,9 +35,8 @@ App.IndexRoute = Ember.Route.extend({
 
   setupController: function(controller, model) {
     this._setupPositionHolders();
-
-   this._position();
-   this._issue();
+    this._position();
+    this._issue();
   },
 
   renderTemplate: function() {
@@ -102,7 +101,7 @@ App.IndexRoute = Ember.Route.extend({
     var self = this;
     // apply received updates
     data.forEach(function(obj){
-      var issue = self.get('store').find('issue', obj.doc._id).then(function(){
+      var issue = self.get('store').find('issue', obj.doc._id).then(function(issue){
         issue.reload();
       })
     });
@@ -187,11 +186,11 @@ App.IndexController = Ember.Controller.extend({
       var position = self.get('content').toArray().indexOf(selfModel)
       view.get('content').removeObject(viewModel);
       self.get('content').insertAt(position, viewModel);
-      self.get('position').save().then(function() {
+      self.get('position').save().then(function(self) {
         self.get('position').reload();
       });
       if(view.name !== self.name){
-        view.get('position').save().then(function() {
+        view.get('position').save().then(function(view) {
           view.get('position').reload();
         });
       }
@@ -240,8 +239,10 @@ App.IssueView = Ember.View.extend({
   },
 
   drop: function(event) {
-    var view = Ember.View.views[event.dataTransfer.getData('id')];
-    this.get('controller').send("dropIssue", view.get('controller'), this.get('controller'), view.get('context'), this.get('context'));
+    if(this.draggable === true){
+      var view = Ember.View.views[event.dataTransfer.getData('id')];
+      this.get('controller').send("dropIssue", view.get('controller'), this.get('controller'), view.get('context'), this.get('context'));
+    }
     event.preventDefault();
     event.target.style.opacity = '1';
   }
