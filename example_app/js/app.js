@@ -190,13 +190,13 @@ App.IndexController = Ember.Controller.extend({
 
       if(viewController.name !== this.name){
         viewController.get('position').save().then(function() {
-         self.get('position').reload();
+         this.get('position').reload();
        });
       }
 
       this.get('content').insertAt(position, viewModel);
       this.get('position').save().then(function() {
-           view.get('position').reload();
+        view.get('position').reload();
       });
     }
   }
