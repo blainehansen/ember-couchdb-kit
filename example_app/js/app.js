@@ -168,12 +168,10 @@ App.IndexController = Ember.Controller.extend({
       attachment.save().then(function() {
         model.get('attachments').pushObject(attachment);
         model.reload();
-        Ember.run.next(function() {
-          count = count + 1;
-          if(count < size){
-            self._actions._addAttachment(count, files, size, model, self);
-          }
-        });
+        count = count + 1;
+        if(count < size){
+          self._actions._addAttachment(count, files, size, model, self);
+        }
       });
     },
 
@@ -182,18 +180,15 @@ App.IndexController = Ember.Controller.extend({
       attachment.save();
     },
 
-    dropIssue: function(view, self, viewModel, selfModel) {
-      var position = self.get('content').toArray().indexOf(selfModel);
-      view.get('content').removeObject(viewModel);
-      self.get('content').insertAt(position, viewModel);
-      self.get('position').save().then(function(self) {
-        self.get('position').reload();
-      });
-      if(view.name !== self.name){
-        view.get('position').save().then(function(view) {
-          view.get('position').reload();
-        });
+    dropIssue: function(viewController, viewModel, thisModel) {
+      viewController.get('content').removeObject(viewModel);
+      if(viewController.name !== this.name){
+        viewController.get('position').save();
       }
+
+      var position = this.get('content').toArray().indexOf(thisModel);
+      this.get('content').insertAt(position, viewModel);
+      this.get('position').save();
     }
   }
 });
@@ -241,7 +236,7 @@ App.IssueView = Ember.View.extend({
   drop: function(event) {
     var view = Ember.View.views[event.dataTransfer.getData('id')];
     if((this.draggable === 'true') || (view.draggable === 'true')){
-      this.get('controller').send("dropIssue", view.get('controller'), this.get('controller'), view.get('context'), this.get('context'));
+      this.get('controller').send("dropIssue", view.get('controller'), view.get('context'), this.get('context'));
     }
     event.preventDefault();
     event.target.style.opacity = '1';
@@ -313,7 +308,7 @@ App.AttachmentView = Ember.View.extend({
 
   actions: {
     browseFile: function(e){
-     this.$().click()
+     this.$().click();
     }
   },
 
