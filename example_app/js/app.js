@@ -185,6 +185,7 @@ App.IndexController = Ember.Controller.extend({
 
     dropIssue: function(viewController, viewModel, thisModel) {
       var position = this.get('content').toArray().indexOf(thisModel);
+      if (position === -1) { position = 0 }
       viewController.get('content').removeObject(viewModel);
 
       if(viewController.name !== this.name){
