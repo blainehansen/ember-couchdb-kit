@@ -51,15 +51,18 @@ App.IndexRoute = Ember.Route.extend({
   _setupPositionHolders: function() {
     var self = this;
     App.Boards.forEach(function(type) {
-      // set issues into appropriate controller through position model
-      self.get('store').find('position', type).then(function(position){
-        self.controllerFor(type).set('position', position);
-      });
-      // create position documents (as a part of first time initialization)
-//        TODO!
-//      if (position.get('store.adapter').is(404, {for: type})) {
-//        App.Position.createRecord({ id: type }).get('store').commit();
-//      }
+      self.get('store').find('position', type).then(
+        function(position){
+          // set issues into appropriate controller through position model
+          self.controllerFor(type).set('position', position);
+        }, 
+        function(position){
+          // create position documents (as a part of first time initialization)
+          if (position.status === 404){
+            self.get('store').createRecord('position', { id: type }).save();
+          }
+        }
+      );
     });
   },
 
@@ -101,7 +104,7 @@ App.IndexRoute = Ember.Route.extend({
     var self = this;
     // apply received updates
     data.forEach(function(obj){
-      var issue = self.get('store').find('issue', obj.doc._id).then(function(issue){
+      self.get('store').find('issue', obj.doc._id).then(function(issue){
         issue.reload();
       })
     });
@@ -181,14 +184,19 @@ App.IndexController = Ember.Controller.extend({
     },
 
     dropIssue: function(viewController, viewModel, thisModel) {
+      var position = this.get('content').toArray().indexOf(thisModel);
       viewController.get('content').removeObject(viewModel);
+
       if(viewController.name !== this.name){
-        viewController.get('position').save();
+        viewController.get('position').save().then(function() {
+         self.get('position').reload();
+       });
       }
 
-      var position = this.get('content').toArray().indexOf(thisModel);
       this.get('content').insertAt(position, viewModel);
-      this.get('position').save();
+      this.get('position').save().then(function() {
+           view.get('position').reload();
+      });
     }
   }
 });
