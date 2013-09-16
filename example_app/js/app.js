@@ -188,9 +188,10 @@ App.IndexController = Ember.Controller.extend({
       if (position === -1) { position = 0 }
       viewController.get('content').removeObject(viewModel);
 
+      var self = this;
       if(viewController.name !== this.name){
         viewController.get('position').save().then(function() {
-         this.get('position').reload();
+         self.get('position').reload();
        });
       }
 
