@@ -5,10 +5,10 @@ App.Boards = ['common', 'intermediate', 'advanced'];
 
 // Models
 
-App.ApplicationAdapter =  EmberCouchDBKit.DocumentAdapter.extend({db: 'boards'});
+App.ApplicationAdapter =  EmberCouchDBKit.DocumentAdapter.extend({db: 'boards', host: "http://localhost:5984"});
 App.ApplicationSerializer = EmberCouchDBKit.DocumentSerializer.extend();
 
-App.AttachmentAdapter = EmberCouchDBKit.AttachmentAdapter.extend({db: 'boards'});
+App.AttachmentAdapter = EmberCouchDBKit.AttachmentAdapter.extend({db: 'boards', host: "http://localhost:5984"});
 App.AttachmentSerializer = EmberCouchDBKit.AttachmentSerializer.extend();
 
 App.Issue = DS.Model.extend({
@@ -69,7 +69,7 @@ App.IndexRoute = Ember.Route.extend({
   _position: function(){
     // create a CouchDB `/_change` listener which serves an position documents
     params = { include_docs: true, timeout: 100, filter: 'issues/only_positions'}
-    position = EmberCouchDBKit.ChangesFeed.create({ db: 'boards', content: params });
+    position = EmberCouchDBKit.ChangesFeed.create({ db: 'boards', host: "http://localhost:5984", content: params });
 
     // all upcoming changes are passed to `_handlePositionChanges` callback through `fromTail` strategy
     var self = this;
@@ -91,7 +91,7 @@ App.IndexRoute = Ember.Route.extend({
   _issue: function() {
     // create a CouchDB `/_change` issue listener which serves an issues
     var params = { include_docs: true, timeout: 100, filter: 'issues/issue'};
-    var issue = EmberCouchDBKit.ChangesFeed.create({ db: 'boards', content: params });
+    var issue = EmberCouchDBKit.ChangesFeed.create({ db: 'boards', host: "http://localhost:5984", content: params });
 
     // all upcoming changes are passed to `_handleIssueChanges` callback through `fromTail` strategy
     var self = this;
