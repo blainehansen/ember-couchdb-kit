@@ -59,7 +59,9 @@ App.IndexRoute = Ember.Route.extend({
         function(position){
           // create position documents (as a part of first time initialization)
           if (position.status === 404){
-            self.get('store').createRecord('position', { id: type }).save();
+            self.get('store').createRecord('position', { id: type }).save().then(function(position){
+              self.controllerFor(type).set('position', position);
+            });
           }
         }
       );
