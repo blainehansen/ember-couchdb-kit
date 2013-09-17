@@ -7,7 +7,7 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
   describe 'model creation', ->
 
     it 'record with specific id', ->
-      person = @subject.create.call(@, 'person', {id: 'john@example.com'})
+      person = @subject.create.call(@, 'user', {id: 'john@example.com'})
 
       runs ->
         expect(person.id).toBe('john@example.com')
@@ -15,14 +15,14 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
         expect(person.get('_data.rev')).not.toBeUndefined()
 
     it 'record with generated id', ->
-      person = @subject.create.call(@, 'person', {})
+      person = @subject.create.call(@, 'user', {})
 
       runs ->
         expect(person.id).not.toBeNull()
 
 
     it 'simple {a:"a", b:"b"} model', ->
-      person = @subject.create.call(@, 'person', {a: 'a', b: 'b'})
+      person = @subject.create.call(@, 'user', {a: 'a', b: 'b'})
 
       runs ->
         expect(person.get('a')).toBe('a')
@@ -30,33 +30,33 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
 
 
     it 'always available as a raw json object', ->
-      person = @subject.create.call(@, 'person', {name: 'john'})
+      person = @subject.create.call(@, 'user', {name: 'john'})
 
       runs ->
         expect(person.get('_data').name).toBe('john')
 
     it 'belongsTo relation', ->
-      person = @subject.create.call(@, 'person', {name: 'john'})
+      person = @subject.create.call(@, 'user', {name: 'john'})
 
       runs ->
         article = @subject.create.call(@, 'article', {})
         runs ->
-          article.set('person', person)
+          article.set('user', person)
           article.save()
 
           waitsFor ->
-            article.get('_data.person') != null
+            article.get('_data.user') != null
 
           runs ->
-            expect(article.get('person.name')).toBe('john')
+            expect(article.get('user.name')).toBe('john')
 
     it 'belongsTo field avilable as a raw js object', ->
-      person = @subject.create.call(@, 'person', {name: 'john'})
+      person = @subject.create.call(@, 'user', {name: 'john'})
 
       runs ->
-        message = @subject.create.call(@, 'message', {person: person})
+        message = @subject.create.call(@, 'message', {user: person})
         runs ->
-          expect(message.get('_data.person')).toBe('john')
+          expect(message.get('_data.user.id')).toBe('john')
 
     it 'with hasMany', ->
       comment = @subject.create.call(@, 'comment', {text: 'text'})
@@ -78,12 +78,12 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
       ,"", 3000
 
       runs ->
-        expect(article.get('_data').comments[0]).toBe(comment.id)
+        expect(article.get('_data').comments[0].id).toBe(comment.id)
 
   describe 'model updating', ->
 
     it 'in general', ->
-      person = @subject.create.call(@, 'person', {name: "John"})
+      person = @subject.create.call(@, 'user', {name: "John"})
       prevRev = undefined
 
       runs ->
@@ -102,21 +102,21 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
       name = 'Vpupkin'
       newName = 'Bobby'
 
-      person1 = @subject.create.call(@, 'person', {name: name})
+      person1 = @subject.create.call(@, 'user', {name: name})
 
       article = undefined
       prevRev = undefined
       person2 = undefined
 
       runs ->
-        article = @subject.create.call(@, 'article', {label: 'Label', person: person1})
+        article = @subject.create.call(@, 'article', {label: 'Label', user: person1})
 
       runs ->
         prevRev =  article.get("_data.rev")
-        person2 = @subject.create.call(@, 'person', {name: newName})
+        person2 = @subject.create.call(@, 'user', {name: newName})
 
       runs ->
-        article.set('person', person2)
+        article.set('user', person2)
         article.save()
 
       waitsFor ->
@@ -125,7 +125,10 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
 
       runs ->
         expect(prevRev).not.toEqual(article.get("_data.rev"))
-        expect(article.get('person')).toEqual(person2.id)
+        expect(article.get('user.id')).toEqual(person2.id)
+
+
+# see for this issue https://github.com/emberjs/data/issues/1228
 
 #    it 'updates hasMany relation', ->
 #      comment = @subject.create.call(@, 'comment', {text: 'Text'})
@@ -164,7 +167,7 @@ describe 'EmberCouchDBKit.DocumentAdapter' , ->
   describe "deletion", ->
 
     it "in general", ->
-      person = @subject.create.call(@, 'person', {name: 'Vpupkin'})
+      person = @subject.create.call(@, 'user', {name: 'Vpupkin'})
 
       runs ->
         person.deleteRecord()

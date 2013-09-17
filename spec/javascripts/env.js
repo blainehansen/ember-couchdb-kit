@@ -36,9 +36,9 @@
       if (!window.Fixture) {
         this.models();
         window.Fixture = window.setupStore({
-          person: Person,
-          comment: Comment,
+          user: User,
           article: Article,
+          comment: Comment,
           message: Message,
           adapter: EmberCouchDBKit.DocumentAdapter.extend({
             db: 'doc'
@@ -51,7 +51,7 @@
     TestEnv.prototype.models = function() {
       var History;
 
-      window.Person = DS.Model.extend({
+      window.User = DS.Model.extend({
         name: DS.attr('string')
       });
       window.Comment = DS.Model.extend({
@@ -59,13 +59,16 @@
       });
       window.Article = DS.Model.extend({
         label: DS.attr('string'),
-        person: DS.belongsTo('person'),
+        user: DS.belongsTo('user', {
+          inverse: null
+        }),
         comments: DS.hasMany('comment', {
-          async: true
+          async: true,
+          inverse: null
         })
       });
       window.Message = DS.Model.extend({
-        person: DS.belongsTo('person', {
+        user: DS.belongsTo('user', {
           attribute: "name"
         })
       });
@@ -80,8 +83,8 @@
         return model.save();
       });
       waitsFor(function() {
-        return model.get('_data.rev');
-      }, "Article id should have NOT be null", 3000);
+        return model.get('_data.rev') !== void 0;
+      }, "id should have NOT be null", 3000);
       return model;
     };
 

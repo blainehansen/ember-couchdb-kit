@@ -29,7 +29,7 @@ class @TestEnv
 
       @models()
 
-      window.Fixture = window.setupStore({person: Person, comment: Comment, article: Article, message: Message, adapter: EmberCouchDBKit.DocumentAdapter.extend({
+      window.Fixture = window.setupStore({user: User, article: Article, comment: Comment, message: Message, adapter: EmberCouchDBKit.DocumentAdapter.extend({
         db: 'doc'
       })})
 
@@ -37,7 +37,7 @@ class @TestEnv
 
 
   models: ->
-    window.Person = DS.Model.extend
+    window.User = DS.Model.extend
       name: DS.attr('string')
 
 #      history: DS.belongsTo('Fixture.History')
@@ -45,18 +45,17 @@ class @TestEnv
 
     window.Comment = DS.Model.extend
       text: DS.attr('string')
-
+#
     window.Article = DS.Model.extend
       label: DS.attr('string')
-      person: DS.belongsTo('person'),
-      comments: DS.hasMany('comment', {async: true})
+      user: DS.belongsTo('user', {inverse: null}),
+      comments: DS.hasMany('comment', {async: true, inverse: null})
 
     window.Message = DS.Model.extend
-      person: DS.belongsTo('person', {attribute: "name"}),
+      user: DS.belongsTo('user', {attribute: "name"})
 
     History = DS.Model.extend()
 
-#    Fixture.Store.registerAdapter('Fixture.History', EmberCouchDBKit.RevsAdapter.extend({db: 'doc'}))
 
   create: (type, params) ->
 
@@ -67,8 +66,8 @@ class @TestEnv
       model.save()
 
     waitsFor ->
-      model.get('_data.rev')
-    , "Article id should have NOT be null", 3000
+      model.get('_data.rev') != undefined
+    , "id should have NOT be null", 3000
 
     model
 

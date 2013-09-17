@@ -9,7 +9,7 @@
       it('record with specific id', function() {
         var person;
 
-        person = this.subject.create.call(this, 'person', {
+        person = this.subject.create.call(this, 'user', {
           id: 'john@example.com'
         });
         return runs(function() {
@@ -21,7 +21,7 @@
       it('record with generated id', function() {
         var person;
 
-        person = this.subject.create.call(this, 'person', {});
+        person = this.subject.create.call(this, 'user', {});
         return runs(function() {
           return expect(person.id).not.toBeNull();
         });
@@ -29,7 +29,7 @@
       it('simple {a:"a", b:"b"} model', function() {
         var person;
 
-        person = this.subject.create.call(this, 'person', {
+        person = this.subject.create.call(this, 'user', {
           a: 'a',
           b: 'b'
         });
@@ -41,7 +41,7 @@
       it('always available as a raw json object', function() {
         var person;
 
-        person = this.subject.create.call(this, 'person', {
+        person = this.subject.create.call(this, 'user', {
           name: 'john'
         });
         return runs(function() {
@@ -51,7 +51,7 @@
       it('belongsTo relation', function() {
         var person;
 
-        person = this.subject.create.call(this, 'person', {
+        person = this.subject.create.call(this, 'user', {
           name: 'john'
         });
         return runs(function() {
@@ -59,13 +59,13 @@
 
           article = this.subject.create.call(this, 'article', {});
           return runs(function() {
-            article.set('person', person);
+            article.set('user', person);
             article.save();
             waitsFor(function() {
-              return article.get('_data.person') !== null;
+              return article.get('_data.user') !== null;
             });
             return runs(function() {
-              return expect(article.get('person.name')).toBe('john');
+              return expect(article.get('user.name')).toBe('john');
             });
           });
         });
@@ -73,17 +73,17 @@
       it('belongsTo field avilable as a raw js object', function() {
         var person;
 
-        person = this.subject.create.call(this, 'person', {
+        person = this.subject.create.call(this, 'user', {
           name: 'john'
         });
         return runs(function() {
           var message;
 
           message = this.subject.create.call(this, 'message', {
-            person: person
+            user: person
           });
           return runs(function() {
-            return expect(message.get('_data.person')).toBe('john');
+            return expect(message.get('_data.user.id')).toBe('john');
           });
         });
       });
@@ -111,7 +111,7 @@
           return article.get('_data.rev') !== oldRev;
         }, "", 3000);
         return runs(function() {
-          return expect(article.get('_data').comments[0]).toBe(comment.id);
+          return expect(article.get('_data').comments[0].id).toBe(comment.id);
         });
       });
     });
@@ -119,7 +119,7 @@
       it('in general', function() {
         var person, prevRev;
 
-        person = this.subject.create.call(this, 'person', {
+        person = this.subject.create.call(this, 'user', {
           name: "John"
         });
         prevRev = void 0;
@@ -140,7 +140,7 @@
 
         name = 'Vpupkin';
         newName = 'Bobby';
-        person1 = this.subject.create.call(this, 'person', {
+        person1 = this.subject.create.call(this, 'user', {
           name: name
         });
         article = void 0;
@@ -149,17 +149,17 @@
         runs(function() {
           return article = this.subject.create.call(this, 'article', {
             label: 'Label',
-            person: person1
+            user: person1
           });
         });
         runs(function() {
           prevRev = article.get("_data.rev");
-          return person2 = this.subject.create.call(this, 'person', {
+          return person2 = this.subject.create.call(this, 'user', {
             name: newName
           });
         });
         runs(function() {
-          article.set('person', person2);
+          article.set('user', person2);
           return article.save();
         });
         waitsFor(function() {
@@ -167,7 +167,7 @@
         }, "", 3000);
         return runs(function() {
           expect(prevRev).not.toEqual(article.get("_data.rev"));
-          return expect(article.get('person')).toEqual(person2.id);
+          return expect(article.get('user.id')).toEqual(person2.id);
         });
       });
     });
@@ -175,7 +175,7 @@
       return it("in general", function() {
         var person;
 
-        person = this.subject.create.call(this, 'person', {
+        person = this.subject.create.call(this, 'user', {
           name: 'Vpupkin'
         });
         return runs(function() {
