@@ -70,7 +70,7 @@ App.IndexRoute = Ember.Route.extend({
 
   _position: function(){
     // create a CouchDB `/_change` listener which serves an position documents
-    params = { include_docs: true, timeout: 100, filter: 'issues/only_positions'}
+    params = { include_docs: true, filter: 'issues/only_positions'}
     position = EmberCouchDBKit.ChangesFeed.create({ db: 'boards', host: "http://localhost:5984", content: params });
 
     // all upcoming changes are passed to `_handlePositionChanges` callback through `fromTail` strategy
@@ -92,7 +92,7 @@ App.IndexRoute = Ember.Route.extend({
 
   _issue: function() {
     // create a CouchDB `/_change` issue listener which serves an issues
-    var params = { include_docs: true, timeout: 100, filter: 'issues/issue'};
+    var params = { include_docs: true, filter: 'issues/issue'};
     var issue = EmberCouchDBKit.ChangesFeed.create({ db: 'boards', host: "http://localhost:5984", content: params });
 
     // all upcoming changes are passed to `_handleIssueChanges` callback through `fromTail` strategy
