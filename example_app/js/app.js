@@ -35,8 +35,8 @@ App.IndexRoute = Ember.Route.extend({
 
   setupController: function(controller, model) {
     this._setupPositionHolders();
-    this._position();
-    this._issue();
+//    this._position();
+//    this._issue();
   },
 
   renderTemplate: function() {
@@ -85,7 +85,7 @@ App.IndexRoute = Ember.Route.extend({
     data.forEach(function(obj){
       var position = self.controllerFor(obj.doc._id).get('position');
       // we should reload particular postion model in case of update is received from another user
-      if (position.get('_data._rev') != obj.doc._rev)
+      if (position.get('_data.rev') != obj.doc._rev)
         position.reload();
     });
   },
@@ -127,16 +127,12 @@ App.IndexController = Ember.Controller.extend({
       var issue = this.get('store').createRecord('issue', {text: text});
       issue.save().then(function(issue) {
         self.get('position.issues').pushObject(issue);
-        self.get('position').save().then(function() {
-          self.get('position').reload();
-        });
+        self.get('position').save();
       });
     },
 
     saveIssue: function(model) {
-      model.save().then(function(){
-        model.reload();
-      });
+      model.save();
     },
 
     deleteIssue: function(issue) {
@@ -144,9 +140,7 @@ App.IndexController = Ember.Controller.extend({
       self.get('position.issues').removeObject(issue);
       issue.deleteRecord();
       issue.save().then(function(){
-        self.get('position').save().then(function() {
-          self.get('position').reload();
-        });
+        self.get('position').save()
       })
     },
 
@@ -198,9 +192,7 @@ App.IndexController = Ember.Controller.extend({
       }
 
       this.get('content').insertAt(position, viewModel);
-      this.get('position').save().then(function() {
-        view.get('position').reload();
-      });
+      this.get('position').save();
     }
   }
 });
