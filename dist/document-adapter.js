@@ -76,16 +76,29 @@
       }
     },
     serializeBelongsTo: function(record, json, relationship) {
+      console.log("serializeBelongsTo");
       var attribute, belongsTo, key;
       attribute = relationship.options.attribute || "id";
+      console.log(attribute);
       key = relationship.key;
+      console.log(key);
       belongsTo = Ember.get(record, key);
+      console.log(belongsTo);
       if (Ember.isNone(belongsTo)) {
         return;
       }
-      json[key] = Ember.get(belongsTo, attribute);
+      // var content = Ember.get(belongsTo, 'id');
+      var content = Ember.get(belongsTo, 'content');
+      console.log(content);
+      var temp = Ember.get(belongsTo, attribute);
+      console.log(temp);
+      json[key] = temp;
+      console.log(json);
       if (relationship.options.polymorphic) {
         return json[key + "_type"] = belongsTo.constructor.typeKey;
+      }
+      else {
+        return json;
       }
     },
     serializeHasMany: function(record, json, relationship) {
